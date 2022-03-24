@@ -1,0 +1,29 @@
+<!--
+ Copyright 2022 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<resources>
+    <string name="app_name">Places Demo</string>
+    <string name="details_demo_title">Place Details</string>
+    <string name="details_demo_description">Fetch and display selected details about a Place</string>
+    <string name="autocomplete_fragment_demo_title">Place Autocomplete</string>
+    <string name="autocomplete_fragment_demo_description">Provide type-ahead predictions of Places as the user types in an input field.</string>
+    <string name="current_demo_title">Current Place</string>
+    <string name="current_demo_description">Suggest possible places that match the device\'s current location</string>
+    <string name="button_details">Get Details</string>
+    <string name="details_input_hint">Enter a Place ID</string>
+    <string name="details_input_default">ChIJ-fIL2vnvTxkRaNUY32NGBYs</string>
+    <string name="current_button">Get Current Place</string>
+</resources>
