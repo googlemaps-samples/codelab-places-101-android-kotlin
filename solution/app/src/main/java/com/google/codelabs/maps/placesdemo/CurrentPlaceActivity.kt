@@ -24,13 +24,22 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
+import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.PlaceLikelihood
@@ -42,17 +51,30 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 
 @ExperimentalCoroutinesApi
-class CurrentPlaceActivity : AppCompatActivity() {
+class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var placesClient: PlacesClient
     private lateinit var currentButton: Button
     private lateinit var responseView: TextView
+    private var map: GoogleMap? = null
+    private val defaultLocation = LatLng(-33.8523341, 151.2106085)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_current)
 
+        val apiKey = BuildConfig.PLACES_API_KEY
+
+        // Log an error if apiKey is not set.
+        if (apiKey.isEmpty() || apiKey == "DEFAULT_API_KEY") {
+            Log.e("Places test", "No api key")
+            finish()
+            return
+        }
+
         // Retrieve a PlacesClient (previously initialized - see DemoApplication)
         placesClient = Places.createClient(this)
+        (supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment?)?.getMapAsync(this)
 
         // Set view objects
         currentButton = findViewById(R.id.current_button)
@@ -148,17 +170,18 @@ class CurrentPlaceActivity : AppCompatActivity() {
         ) {
             // Retrieve likely places based on the device's current location
             lifecycleScope.launch {
-                try {
-                    val response = placesClient.awaitFindCurrentPlace(placeFields)
-                    responseView.text = response.prettyPrint()
-
-                    // Enable scrolling on the long list of likely places
-                    val movementMethod = ScrollingMovementMethod()
-                    responseView.movementMethod = movementMethod
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    responseView.text = e.message
+                val response = placesClient.awaitFindCurrentPlace(placeFields)
+                val place = if (!response.placeLikelihoods.isEmpty()) {
+                    response.placeLikelihoods[0].place
+                } else {
+                    null
                 }
+                setPlaceOnMap(place)
+                responseView.text = response.prettyPrint()
+
+                // Enable scrolling on the long list of likely places
+                val movementMethod = ScrollingMovementMethod()
+                responseView.movementMethod = movementMethod
             }
         } else {
             Log.d(TAG, "LOCATION permission not granted")
@@ -167,9 +190,29 @@ class CurrentPlaceActivity : AppCompatActivity() {
         }
     }
 
+    override fun onMapReady(map: GoogleMap) {
+        this.map = map
+    }
+
+    private fun setPlaceOnMap(place: Place?) {
+        val latLng = place?.latLng ?: defaultLocation
+        map?.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                latLng,
+                DEFAULT_ZOOM
+            )
+        )
+        map?.addMarker(
+            MarkerOptions()
+            .position(latLng)
+            .title(place?.name)
+        )
+    }
+
     companion object {
         private val TAG = "CurrentPlaceActivity"
         private const val PERMISSION_REQUEST_CODE = 9
+        private const val DEFAULT_ZOOM = 15f
     }
 }
 
