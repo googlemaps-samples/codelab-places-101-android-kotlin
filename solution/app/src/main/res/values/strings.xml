@@ -27,4 +27,5 @@
     <string name="details_input_default">ChIJ-fIL2vnvTxkRaNUY32NGBYs</string>
     <string name="current_button">Get Current Place</string>
     <string name="showing_most_likely_place">Showing most likely place</string>
+    <string name="pick_place">Choose a place</string>
 </resources>
