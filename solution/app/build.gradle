@@ -48,4 +48,17 @@ dependencies {
     implementation 'com.google.android.libraries.places:places:2.6.0'
     // Places SDK for Android KTX Library
     implementation 'com.google.maps.android:places-ktx:2.0.0'
+    implementation 'com.google.android.gms:play-services-maps:18.2.0'
+}
+
+secrets {
+    // To add your Maps API key to this project:
+    // 1. Open the root project's local.properties file
+    // 2. Add this line, where YOUR_API_KEY is your API key:
+    //        MAPS_API_KEY=YOUR_API_KEY
+    propertiesFileName = "secrets.properties"
+    defaultPropertiesFileName 'local.defaults.properties'
+
+    ignoreList.add("keyToIgnore") // Ignore the key "keyToIgnore"
+    ignoreList.add("sdk.*")       // Ignore all keys matching the regexp "sdk.*"
 }

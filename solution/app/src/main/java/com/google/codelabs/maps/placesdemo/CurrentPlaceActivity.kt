@@ -20,6 +20,7 @@ import android.Manifest
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
@@ -27,10 +28,17 @@ import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.annotation.RequiresPermission
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.PlaceLikelihood
@@ -42,17 +50,41 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 
 @ExperimentalCoroutinesApi
-class CurrentPlaceActivity : AppCompatActivity() {
+class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var placesClient: PlacesClient
     private lateinit var currentButton: Button
     private lateinit var responseView: TextView
+    private var map: GoogleMap? = null
+    private val defaultLocation = LatLng(-33.8523341, 151.2106085)
+
+    private var likelyPlaceNames = mutableListOf<String>()
+    private var likelyPlaceAddresses = mutableListOf<String>()
+    private var likelyPlaceAttributions = mutableListOf<MutableList<String?>?>()
+    private var likelyPlaceLatLngs = mutableListOf<LatLng>()
+
+    private var lastKnownLocation: LatLng? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_current)
 
+        if (savedInstanceState != null) {
+            lastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION)
+        }
+
+        val apiKey = BuildConfig.PLACES_API_KEY
+
+        // Log an error if apiKey is not set.
+        if (apiKey.isEmpty() || apiKey == "DEFAULT_API_KEY") {
+            Log.e("Places test", "No api key")
+            finish()
+            return
+        }
+
         // Retrieve a PlacesClient (previously initialized - see DemoApplication)
         placesClient = Places.createClient(this)
+        (supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment?)?.getMapAsync(this)
 
         // Set view objects
         currentButton = findViewById(R.id.current_button)
@@ -63,6 +95,14 @@ class CurrentPlaceActivity : AppCompatActivity() {
             checkPermissionThenFindCurrentPlace()
         }
 
+    }
+
+    /**
+     * Saves the state of the map when the activity is paused.
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putParcelable(KEY_LOCATION, lastKnownLocation)
+        super.onSaveInstanceState(outState)
     }
 
     /**
@@ -148,17 +188,31 @@ class CurrentPlaceActivity : AppCompatActivity() {
         ) {
             // Retrieve likely places based on the device's current location
             lifecycleScope.launch {
-                try {
-                    val response = placesClient.awaitFindCurrentPlace(placeFields)
-                    responseView.text = response.prettyPrint()
+                val response = placesClient.awaitFindCurrentPlace(placeFields)
 
-                    // Enable scrolling on the long list of likely places
-                    val movementMethod = ScrollingMovementMethod()
-                    responseView.movementMethod = movementMethod
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    responseView.text = e.message
+                val locations = response
+                    .placeLikelihoods
+                    .take(M_MAX_ENTRIES)
+
+                likelyPlaceNames.clear()
+                likelyPlaceAddresses.clear()
+                likelyPlaceAttributions.clear()
+                likelyPlaceLatLngs.clear()
+
+                for (location in locations) {
+                    likelyPlaceNames.add(location.place.name)
+                    likelyPlaceAddresses.add(location.place.address)
+                    likelyPlaceAttributions.add(location.place.attributions)
+                    likelyPlaceLatLngs.add(location.place.latLng)
                 }
+
+                openPlacesDialog()
+
+                responseView.text = response.prettyPrint()
+
+                // Enable scrolling on the long list of likely places
+                val movementMethod = ScrollingMovementMethod()
+                responseView.movementMethod = movementMethod
             }
         } else {
             Log.d(TAG, "LOCATION permission not granted")
@@ -167,9 +221,79 @@ class CurrentPlaceActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Displays a form allowing the user to select a place from a list of likely places.
+     */
+    private fun openPlacesDialog() {
+        // Ask the user to choose the place where they are now.
+        val listener =
+            DialogInterface.OnClickListener { _, which -> // The "which" argument contains the position of the selected item.
+                val markerLatLng: LatLng = likelyPlaceLatLngs.get(which)
+                var markerSnippet: String = likelyPlaceAddresses.get(which)
+                if (likelyPlaceAttributions.get(which) != null) {
+                    markerSnippet = """
+                        $markerSnippet
+                        ${likelyPlaceAttributions.get(which)}
+                    """.trimIndent()
+                }
+
+                lastKnownLocation = markerLatLng
+
+                var place = Place.builder().apply {
+                    name = likelyPlaceNames.get(which)
+                    latLng = markerLatLng
+                }.build()
+
+                map!!.clear()
+
+                setPlaceOnMap(place, markerSnippet)
+            }
+
+        // Display the dialog.
+        AlertDialog.Builder(this)
+            .setTitle(R.string.pick_place)
+            .setItems(likelyPlaceNames.toTypedArray(), listener)
+            .show()
+    }
+
+    override fun onMapReady(map: GoogleMap) {
+        this.map = map
+        if (lastKnownLocation != null) {
+            map.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    lastKnownLocation!!,
+                    DEFAULT_ZOOM
+                )
+            )
+        }
+    }
+
+    private fun setPlaceOnMap(place: Place?, markerSnippet: String?) {
+        val latLng = place?.latLng ?: defaultLocation
+        map?.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                latLng,
+                DEFAULT_ZOOM
+            )
+        )
+        map?.addMarker(
+            MarkerOptions()
+            .position(latLng)
+            .title(place?.name)
+            .snippet(markerSnippet)
+        )
+    }
+
     companion object {
         private val TAG = "CurrentPlaceActivity"
         private const val PERMISSION_REQUEST_CODE = 9
+        private const val DEFAULT_ZOOM = 15f
+
+        // Key for storing activity state.
+        private const val KEY_LOCATION = "location"
+
+        private const val M_MAX_ENTRIES = 5
+
     }
 }
 
