@@ -14,8 +14,8 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:background="@color/colorGray"
     android:layout_width="match_parent"
@@ -32,7 +32,17 @@
         android:id="@+id/current_response_content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxHeight="200dp"
         android:paddingTop="16dp"
-        android:scrollbars = "vertical"
         android:textIsSelectable="true" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
+        android:text="@string/showing_most_likely_place"
+        style="@style/TextAppearance.AppCompat.Title"/>
+
+    <include layout="@layout/fragment_map"/>
 </LinearLayout>
