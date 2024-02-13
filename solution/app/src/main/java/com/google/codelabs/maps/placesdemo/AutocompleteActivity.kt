@@ -43,7 +43,9 @@ class AutocompleteActivity : AppCompatActivity() {
                     as AutocompleteSupportFragment
 
         // Specify the types of place data to return.
-        autocompleteFragment.setPlaceFields(listOf(Place.Field.NAME, Place.Field.ID, Place.Field.LAT_LNG, Place.Field.ADDRESS))
+        val placeFields: List<Place.Field> =
+            listOf(Place.Field.NAME, Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
+        autocompleteFragment.setPlaceFields(placeFields)
 
         // Listen to place selection events
         lifecycleScope.launchWhenCreated {
@@ -51,7 +53,7 @@ class AutocompleteActivity : AppCompatActivity() {
                 when (event) {
                     is PlaceSelectionSuccess -> {
                         val place = event.place
-                        responseView.text = StringUtil.stringifyAutocompleteWidget(place, false)
+                        responseView.text = prettyPrintAutocompleteWidget(place, false)
                     }
                     is PlaceSelectionError -> Toast.makeText(
                         this@AutocompleteActivity,

@@ -47,8 +47,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".AutocompleteActivity" />
-        <activity android:name=".CurrentPlaceActivity" />
-        <activity android:name=".DetailsActivity" />
+        <activity android:name=".AutocompleteActivity" android:label="@string/autocomplete_fragment_demo_title" />
+        <activity android:name=".CurrentPlaceActivity" android:label="@string/current_demo_title" />
+        <activity android:name=".DetailsActivity" android:label="@string/details_demo_title" />
     </application>
 </manifest>

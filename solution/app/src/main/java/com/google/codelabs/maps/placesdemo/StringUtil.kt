@@ -16,137 +16,68 @@
 
 package com.google.codelabs.maps.placesdemo
 
-import android.annotation.SuppressLint
-import android.text.TextUtils
-import android.widget.TextView
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.model.PlaceLikelihood
 import com.google.android.libraries.places.api.net.FetchPlaceResponse
-import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse
 import com.google.android.libraries.places.api.net.FindCurrentPlaceResponse
 
-/**
- * Utility class for converting objects to viewable strings and back.
- */
-object StringUtil {
-    private const val FIELD_SEPARATOR = "\n\t"
-    private const val RESULT_SEPARATOR = "\n---\n\t"
+internal const val FIELD_SEPARATOR = "\n\t"
+internal const val RESULT_SEPARATOR = "\n---\n\t"
 
-    @SuppressLint("SetTextI18n")
-    fun prepend(textView: TextView, prefix: String) {
-        textView.text = """
-            $prefix
+fun FetchPlaceResponse.prettyPrint(): String {
+    val raw = false
+    val response = this
 
-            ${textView.text}
-            """.trimIndent()
-    }
-
-    fun convertToLatLng(value: String?): LatLng? {
-        if (TextUtils.isEmpty(value)) {
-            return null
-        }
-        val split = value!!.split(",").dropLastWhile { it.isEmpty() }.toTypedArray()
-        return if (split.size != 2) {
-            null
-        } else try {
-            LatLng(split[0].toDouble(), split[1].toDouble())
-        } catch (e: NullPointerException) {
-            null
-        } catch (e: NumberFormatException) {
-            null
-        }
-    }
-
-    fun countriesStringToArrayList(countriesString: String): List<String> {
-        // Allow these delimiters: , ; | / \
-        return listOf(*countriesString
-            .replace("\\s".toRegex(), "|")
-            .split("[,;|/\\\\]").dropLastWhile { it.isEmpty() }.toTypedArray()
-        )
-    }
-
-    fun stringify(response: FindAutocompletePredictionsResponse, raw: Boolean): String {
-        val builder = StringBuilder()
-        builder
-            .append(response.autocompletePredictions.size)
-            .append(" Autocomplete Predictions Results:")
+    return buildString {
+        append("Fetch Place Result:")
+        append(RESULT_SEPARATOR)
         if (raw) {
-            builder.append(RESULT_SEPARATOR)
-            appendListToStringBuilder(builder, response.autocompletePredictions)
+            append(response.place)
         } else {
-            for (autocompletePrediction in response.autocompletePredictions) {
-                builder
-                    .append(RESULT_SEPARATOR)
-                    .append(autocompletePrediction.getFullText( /* matchStyle */null))
-            }
-        }
-        return builder.toString()
-    }
-
-    fun stringify(response: FetchPlaceResponse, raw: Boolean): String {
-        val builder = StringBuilder()
-        builder.append("Fetch Place Result:").append(RESULT_SEPARATOR)
-        if (raw) {
-            builder.append(response.place)
-        } else {
-            builder.append(stringify(response.place))
-        }
-        return builder.toString()
-    }
-
-    fun stringify(response: FindCurrentPlaceResponse, raw: Boolean): String {
-        val builder = StringBuilder()
-        builder.append(response.placeLikelihoods.size).append(" Current Place Results:")
-        if (raw) {
-            builder.append(RESULT_SEPARATOR)
-            appendListToStringBuilder(builder, response.placeLikelihoods)
-        } else {
-            for (placeLikelihood in response.placeLikelihoods) {
-                builder
-                    .append(RESULT_SEPARATOR)
-                    .append("Likelihood: ")
-                    .append(placeLikelihood.likelihood)
-                    .append(FIELD_SEPARATOR)
-                    .append("Place: ")
-                    .append(stringify(placeLikelihood.place))
-            }
-        }
-        return builder.toString()
-    }
-
-    fun stringify(place: Place): String {
-        return (place.name
-                + " ("
-                + place.id
-                + ")"
-                + " is located at "
-                + place.latLng.latitude
-                + ", "
-                + place.latLng.longitude
-                + " ("
-                + place.address
-                + ")")
-    }
-
-    fun stringifyAutocompleteWidget(place: Place, raw: Boolean): String {
-        val builder = StringBuilder()
-        builder.append("Autocomplete Widget Result:").append(RESULT_SEPARATOR)
-        if (raw) {
-            builder.append(place)
-        } else {
-            builder.append(stringify(place))
-        }
-        return builder.toString()
-    }
-
-    private fun <T> appendListToStringBuilder(builder: StringBuilder, items: List<T>) {
-        if (items.isEmpty()) {
-            return
-        }
-        builder.append(items[0])
-        for (i in 1 until items.size) {
-            builder.append(RESULT_SEPARATOR)
-            builder.append(items[i])
+            append(response.place.prettyPrint())
         }
     }
 }
+
+fun FindCurrentPlaceResponse.prettyPrint(): String {
+    val raw = false
+    val response = this
+
+    return buildString {
+        append(response.placeLikelihoods.size)
+        append(" Current Place Results:")
+        if (raw) {
+            append(RESULT_SEPARATOR)
+            append(response.placeLikelihoods.joinToString(RESULT_SEPARATOR))
+        } else {
+            if (response.placeLikelihoods.isNotEmpty()) {
+                append(RESULT_SEPARATOR)
+            }
+            append(
+                response.placeLikelihoods.joinToString(RESULT_SEPARATOR) { placeLikelihood ->
+                    placeLikelihood.prettyPrint()
+                }
+            )
+        }
+    }
+}
+
+internal fun prettyPrintAutocompleteWidget(place: Place, raw: Boolean): String {
+    return buildString {
+        append("Autocomplete Widget Result:")
+        append(RESULT_SEPARATOR)
+        if (raw) {
+            append(place)
+        } else {
+            append(place.prettyPrint())
+        }
+    }
+}
+
+private fun PlaceLikelihood.prettyPrint() =
+    "Likelihood: $likelihood${FIELD_SEPARATOR}Place: ${place.prettyPrint()}"
+
+private fun LatLng.prettyPrint() = "$latitude, $longitude"
+
+private fun Place.prettyPrint() = "$name ($id) is located at ${latLng?.prettyPrint()} ($address)"
