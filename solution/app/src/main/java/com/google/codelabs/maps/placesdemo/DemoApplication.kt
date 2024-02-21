@@ -24,6 +24,6 @@ class DemoApplication : Application() {
         super.onCreate()
 
         // Initialize the SDK with the Google Maps Platform API key
-        Places.initialize(this, BuildConfig.MAPS_API_KEY)
+        Places.initialize(this, BuildConfig.PLACES_API_KEY)
     }
 }
