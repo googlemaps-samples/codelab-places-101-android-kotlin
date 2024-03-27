@@ -23,7 +23,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.api.net.FetchPlaceResponse
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.ktx.api.net.awaitFetchPlace
 import com.google.android.material.textfield.TextInputEditText
@@ -50,7 +49,8 @@ class DetailsActivity : AppCompatActivity() {
         placesClient = Places.createClient(this)
 
         // Upon button click, fetch and display the Place Details
-        detailsButton.setOnClickListener {
+        detailsButton.setOnClickListener { button ->
+            button.isEnabled = false
             val placeId = detailsInput.text.toString()
             val placeFields = listOf(
                 Place.Field.NAME,
@@ -66,11 +66,9 @@ class DetailsActivity : AppCompatActivity() {
                     e.printStackTrace()
                     responseView.text = e.message
                 }
+                button.isEnabled = true
             }
         }
     }
 }
 
-fun FetchPlaceResponse.prettyPrint(): String {
-    return StringUtil.stringify(this, false)
-}
