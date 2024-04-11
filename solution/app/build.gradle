@@ -46,17 +46,18 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 
     // Include Places SDK for Android
-    implementation 'com.google.android.libraries.places:places:3.3.0'
+    implementation 'com.google.android.libraries.places:places:3.4.0'
     // Places SDK for Android KTX Library
     implementation 'com.google.maps.android:places-ktx:3.1.1'
     implementation 'com.google.android.gms:play-services-maps:18.2.0'
 }
 
 secrets {
-    // To add your Maps API key to this project:
-    // 1. Open the root project's local.properties file
-    // 2. Add this line, where YOUR_API_KEY is your API key:
-    //        PLACES_API_KEY=YOUR_API_KEY
+    // Optionally specify a different file name containing your secrets.
+    // The plugin defaults to "local.properties"
     propertiesFileName = "secrets.properties"
-    defaultPropertiesFileName 'local.defaults.properties'
+
+    // A properties file containing default secret values. This file can be
+    // checked in version control.
+    defaultPropertiesFileName = "local.defaults.properties"
 }
