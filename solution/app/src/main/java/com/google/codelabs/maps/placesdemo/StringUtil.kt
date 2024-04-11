@@ -26,40 +26,29 @@ internal const val FIELD_SEPARATOR = "\n\t"
 internal const val RESULT_SEPARATOR = "\n---\n\t"
 
 fun FetchPlaceResponse.prettyPrint(): String {
-    val raw = false
     val response = this
 
     return buildString {
         append("Fetch Place Result:")
         append(RESULT_SEPARATOR)
-        if (raw) {
-            append(response.place)
-        } else {
-            append(response.place.prettyPrint())
-        }
+        append(response.place.prettyPrint())
     }
 }
 
 fun FindCurrentPlaceResponse.prettyPrint(): String {
-    val raw = false
     val response = this
 
     return buildString {
         append(response.placeLikelihoods.size)
         append(" Current Place Results:")
-        if (raw) {
+        if (response.placeLikelihoods.isNotEmpty()) {
             append(RESULT_SEPARATOR)
-            append(response.placeLikelihoods.joinToString(RESULT_SEPARATOR))
-        } else {
-            if (response.placeLikelihoods.isNotEmpty()) {
-                append(RESULT_SEPARATOR)
-            }
-            append(
-                response.placeLikelihoods.joinToString(RESULT_SEPARATOR) { placeLikelihood ->
-                    placeLikelihood.prettyPrint()
-                }
-            )
         }
+        append(
+            response.placeLikelihoods.joinToString(RESULT_SEPARATOR) { placeLikelihood ->
+                placeLikelihood.prettyPrint()
+            }
+        )
     }
 }
 
