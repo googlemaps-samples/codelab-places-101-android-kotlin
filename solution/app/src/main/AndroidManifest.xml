@@ -15,8 +15,7 @@
  limitations under the License.
 -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.google.codelabs.maps.placesdemo">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission
         android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -29,6 +28,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PlacesDemo">
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+        <!--
+             The API key for Maps SDK for Android.
+        -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -37,8 +46,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".AutocompleteActivity" />
-        <activity android:name=".CurrentPlaceActivity" />
-        <activity android:name=".DetailsActivity" />
+        <activity android:name=".AutocompleteActivity" android:label="@string/autocomplete_fragment_demo_title" />
+        <activity android:name=".CurrentPlaceActivity" android:label="@string/current_demo_title" />
+        <activity android:name=".DetailsActivity" android:label="@string/details_demo_title" />
     </application>
 </manifest>
