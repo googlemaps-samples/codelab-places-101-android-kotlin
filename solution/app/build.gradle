@@ -46,9 +46,9 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 
     // Include Places SDK for Android
-    implementation 'com.google.android.libraries.places:places:3.4.0'
+    implementation 'com.google.android.libraries.places:places:5.3.0'
     // Places SDK for Android KTX Library
-    implementation 'com.google.maps.android:places-ktx:3.1.1'
+    implementation 'com.google.maps.android:places-ktx:5.0.0'
     implementation 'com.google.android.gms:play-services-maps:18.2.0'
 }
 
