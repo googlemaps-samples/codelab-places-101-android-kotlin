@@ -17,6 +17,7 @@
 package com.google.codelabs.maps.placesdemo
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -24,12 +25,10 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.PlacesClient
-import com.google.android.libraries.places.ktx.api.net.awaitFetchPlace
+import com.google.android.libraries.places.api.net.kotlin.awaitFetchPlace
 import com.google.android.material.textfield.TextInputEditText
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 
-@ExperimentalCoroutinesApi
 class DetailsActivity : AppCompatActivity() {
     private lateinit var placesClient: PlacesClient
     private lateinit var detailsButton: Button
@@ -45,6 +44,15 @@ class DetailsActivity : AppCompatActivity() {
         detailsButton = findViewById(R.id.details_button)
         responseView = findViewById(R.id.details_response_content)
 
+        val apiKey = BuildConfig.PLACES_API_KEY
+
+        // Log an error if apiKey is not set.
+        if (apiKey.isEmpty() || apiKey == "DEFAULT_API_KEY") {
+            Log.e(TAG, "No api key")
+            finish()
+            return
+        }
+
         // Retrieve a PlacesClient (previously initialized - see DemoApplication)
         placesClient = Places.createClient(this)
 
@@ -53,10 +61,10 @@ class DetailsActivity : AppCompatActivity() {
             button.isEnabled = false
             val placeId = detailsInput.text.toString()
             val placeFields = listOf(
-                Place.Field.NAME,
+                Place.Field.DISPLAY_NAME,
                 Place.Field.ID,
-                Place.Field.LAT_LNG,
-                Place.Field.ADDRESS
+                Place.Field.LOCATION,
+                Place.Field.FORMATTED_ADDRESS
             )
             lifecycleScope.launch {
                 try {
@@ -70,5 +78,8 @@ class DetailsActivity : AppCompatActivity() {
             }
         }
     }
-}
 
+    companion object {
+        private const val TAG = "DetailsActivity"
+    }
+}

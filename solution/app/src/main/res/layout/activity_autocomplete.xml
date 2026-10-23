@@ -22,12 +22,11 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/autocomplete_fragment"
-        android:background="@android:color/white"
-        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
+    <Button
+        android:id="@+id/autocomplete_button"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:text="@string/button_autocomplete" />
 
     <TextView
         android:id="@+id/autocomplete_response_content"

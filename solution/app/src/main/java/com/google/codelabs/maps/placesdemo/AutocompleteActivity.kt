@@ -16,21 +16,40 @@
 
 package com.google.codelabs.maps.placesdemo
 
+import android.app.Activity
 import android.os.Bundle
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.ktx.widget.PlaceSelectionError
-import com.google.android.libraries.places.ktx.widget.PlaceSelectionSuccess
-import com.google.android.libraries.places.ktx.widget.placeSelectionEvents
-import com.google.android.libraries.places.widget.AutocompleteSupportFragment
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.google.android.libraries.places.widget.BasicPlaceAutocomplete
+import com.google.android.libraries.places.widget.PlaceAutocompleteActivity
 
-@ExperimentalCoroutinesApi
 class AutocompleteActivity : AppCompatActivity() {
     private lateinit var responseView: TextView
+    private lateinit var autocompleteButton: Button
+
+    private val startAutocomplete =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val intent = result.data
+            when (result.resultCode) {
+                Activity.RESULT_OK -> {
+                    val place = intent?.let { BasicPlaceAutocomplete.getPlaceFromIntent(it) }
+                    if (place != null) {
+                        responseView.text = prettyPrintAutocompleteWidget(place, false)
+                    }
+                }
+                PlaceAutocompleteActivity.RESULT_ERROR -> {
+                    val status = intent?.let { BasicPlaceAutocomplete.getResultStatusFromIntent(it) }
+                    Toast.makeText(
+                        this,
+                        "Failed to get place '${status?.statusMessage}'",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,30 +57,12 @@ class AutocompleteActivity : AppCompatActivity() {
 
         // Set up view objects
         responseView = findViewById(R.id.autocomplete_response_content)
-        val autocompleteFragment =
-            supportFragmentManager.findFragmentById(R.id.autocomplete_fragment)
-                    as AutocompleteSupportFragment
+        autocompleteButton = findViewById(R.id.autocomplete_button)
 
-        // Specify the types of place data to return.
-        val placeFields: List<Place.Field> =
-            listOf(Place.Field.NAME, Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
-        autocompleteFragment.setPlaceFields(placeFields)
-
-        // Listen to place selection events
-        lifecycleScope.launchWhenCreated {
-            autocompleteFragment.placeSelectionEvents().collect { event ->
-                when (event) {
-                    is PlaceSelectionSuccess -> {
-                        val place = event.place
-                        responseView.text = prettyPrintAutocompleteWidget(place, false)
-                    }
-                    is PlaceSelectionError -> Toast.makeText(
-                        this@AutocompleteActivity,
-                        "Failed to get place '${event.status.statusMessage}'",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
+        // Launch Place Autocomplete when the button is clicked
+        autocompleteButton.setOnClickListener {
+            val intent = BasicPlaceAutocomplete.createIntent(this)
+            startAutocomplete.launch(intent)
         }
     }
 }

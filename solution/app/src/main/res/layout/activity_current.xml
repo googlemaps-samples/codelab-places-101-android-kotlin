@@ -34,6 +34,7 @@
         android:layout_height="wrap_content"
         android:maxHeight="200dp"
         android:paddingTop="16dp"
+        android:scrollbars="vertical"
         android:textIsSelectable="true" />
 
     <TextView

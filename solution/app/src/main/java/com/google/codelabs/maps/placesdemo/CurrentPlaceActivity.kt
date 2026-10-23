@@ -31,7 +31,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.os.BundleCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -39,14 +41,13 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.CircularBounds
 import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.api.model.PlaceLikelihood
 import com.google.android.libraries.places.api.net.PlacesClient
-import com.google.android.libraries.places.ktx.api.net.awaitFindCurrentPlace
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.google.android.libraries.places.api.net.kotlin.awaitSearchNearby
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
-@ExperimentalCoroutinesApi
 class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var placesClient: PlacesClient
     private lateinit var currentButton: Button
@@ -63,7 +64,11 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_current)
 
         if (savedInstanceState != null) {
-            lastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION)
+            lastKnownLocation = BundleCompat.getParcelable(
+                savedInstanceState,
+                KEY_LOCATION,
+                LatLng::class.java
+            )
         }
 
         val apiKey = BuildConfig.PLACES_API_KEY
@@ -100,7 +105,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
 
     /**
      * Checks that the user has granted permission for fine or coarse location.
-     * If granted, finds current Place.
+     * If granted, searches for nearby places around the current location.
      * If not yet granted, launches the permission request.
      * See https://developer.android.com/training/permissions/requesting
      */
@@ -114,7 +119,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
                 ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED) -> {
                 // You can use the API that requires the permission.
-                findCurrentPlace()
+                searchNearbyPlaces()
             }
 
             shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION)
@@ -158,46 +163,59 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
                     grantResult == PackageManager.PERMISSION_GRANTED && (permission == ACCESS_FINE_LOCATION || permission == ACCESS_COARSE_LOCATION)
                 } != null
         )
-        // At least one location permission has been granted, so proceed with Find Current Place
-        findCurrentPlace()
+        // At least one location permission has been granted, so proceed with searching nearby places
+        searchNearbyPlaces()
     }
 
     /**
-     * Fetches a list of [PlaceLikelihood] instances that represent the Places the user is
-     * most likely to be at currently.
+     * Fetches a list of nearby [Place] instances around the device's current location.
      */
     @RequiresPermission(anyOf = [ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION])
-    private fun findCurrentPlace() {
+    private fun searchNearbyPlaces() {
         // Use fields to define the data types to return.
         val placeFields: List<Place.Field> =
-            listOf(Place.Field.NAME, Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
+            listOf(
+                Place.Field.DISPLAY_NAME,
+                Place.Field.ID,
+                Place.Field.FORMATTED_ADDRESS,
+                Place.Field.LOCATION
+            )
 
-        // Call findCurrentPlace and handle the response (first check that the user has granted permission).
         if (ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(this, ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
         ) {
-            // Retrieve likely places based on the device's current location
+            // Retrieve nearby places based on the device's current location
             currentButton.isEnabled = false
             lifecycleScope.launch {
-                val response = placesClient.awaitFindCurrentPlace(placeFields)
+                try {
+                    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this@CurrentPlaceActivity)
+                    val location = fusedLocationClient.lastLocation.await()
+                    val searchCenter = location?.let { LatLng(it.latitude, it.longitude) } ?: defaultLocation
+                    val circle = CircularBounds.newInstance(searchCenter, 500.0)
+                    val response = placesClient.awaitSearchNearby(circle, placeFields)
 
-                likelyPlaces.clear()
+                    likelyPlaces.clear()
 
-                likelyPlaces.addAll(
-                    response.placeLikelihoods.take(M_MAX_ENTRIES).mapNotNull { placeLikelihood ->
-                        placeLikelihood.toLikelyPlace()
-                    }
-                )
+                    likelyPlaces.addAll(
+                        response.places.take(M_MAX_ENTRIES).mapNotNull { place ->
+                            place.toLikelyPlace()
+                        }
+                    )
 
-                openPlacesDialog()
+                    openPlacesDialog()
 
-                responseView.text = response.prettyPrint()
+                    responseView.text = response.prettyPrint()
 
-                // Enable scrolling on the long list of likely places
-                val movementMethod = ScrollingMovementMethod()
-                responseView.movementMethod = movementMethod
+                    // Enable scrolling on the long list of likely places
+                    val movementMethod = ScrollingMovementMethod()
+                    responseView.movementMethod = movementMethod
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    responseView.text = e.message
+                    currentButton.isEnabled = true
+                }
             }
         } else {
             Log.d(TAG, "LOCATION permission not granted")
@@ -224,8 +242,8 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 val place = Place.builder().apply {
-                    name = likelyPlace.name
-                    latLng = likelyPlace.latLng
+                    displayName = likelyPlace.name
+                    location = likelyPlace.latLng
                 }.build()
 
                 map?.clear()
@@ -256,7 +274,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun setPlaceOnMap(place: Place?, markerSnippet: String?) {
-        val latLng = place?.latLng ?: defaultLocation
+        val latLng = place?.location ?: defaultLocation
         map?.moveCamera(
             CameraUpdateFactory.newLatLngZoom(
                 latLng,
@@ -266,7 +284,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         map?.addMarker(
             MarkerOptions()
                 .position(latLng)
-                .title(place?.name)
+                .title(place?.displayName)
                 .snippet(markerSnippet)
         )
     }
@@ -280,7 +298,6 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         private const val KEY_LOCATION = "location"
 
         private const val M_MAX_ENTRIES = 5
-
     }
 }
 
@@ -291,11 +308,11 @@ private data class LikelyPlace(
     val latLng: LatLng
 )
 
-private fun PlaceLikelihood.toLikelyPlace(): LikelyPlace? {
-    val name = this.place.name
-    val address = this.place.address
-    val latLng = this.place.latLng
-    val attributions = this.place.attributions ?: emptyList()
+private fun Place.toLikelyPlace(): LikelyPlace? {
+    val name = this.displayName
+    val address = this.formattedAddress
+    val latLng = this.location
+    val attributions = this.attributions ?: emptyList()
 
     return if (name != null && address != null && latLng != null) {
         LikelyPlace(name, address, attributions, latLng)
