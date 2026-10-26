@@ -48,6 +48,36 @@ import com.google.android.libraries.places.api.net.kotlin.awaitSearchNearby
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+/**
+ * UI model representing a candidate place item in the selection dialog and on the map.
+ *
+ * Abstracting the Places SDK network model ([Place]) from the UI state decouples
+ * the presentation layer from network-specific types and makes the mapping logic
+ * directly unit-testable on the JVM.
+ */
+internal data class PlaceItemUiModel(
+    val title: String,
+    val snippet: String,
+    val position: LatLng
+)
+
+/**
+ * Maps a network [Place] returned by the Places SDK to a [PlaceItemUiModel] for UI rendering,
+ * or returns `null` if the place has no geographic [Place.getLocation].
+ */
+internal fun toPlaceItemUiModel(place: Place, defaultTitle: String): PlaceItemUiModel? {
+    val position = place.location ?: return null
+    val title = place.displayName ?: defaultTitle
+    val snippet = buildString {
+        place.formattedAddress?.let { append(it) }
+        place.attributions?.takeIf { it.isNotEmpty() }?.let {
+            if (isNotEmpty()) append("\n")
+            append(it.joinToString("\n"))
+        }
+    }
+    return PlaceItemUiModel(title = title, snippet = snippet, position = position)
+}
+
 class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var placesClient: PlacesClient
     private lateinit var currentButton: Button
@@ -55,7 +85,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     private var map: GoogleMap? = null
     private val defaultLocation = LatLng(-33.8523341, 151.2106085)
 
-    private val likelyPlaces = mutableListOf<LikelyPlace>()
+    private val likelyPlaces = mutableListOf<PlaceItemUiModel>()
 
     private var lastKnownLocation: LatLng? = null
 
@@ -125,7 +155,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
             shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION)
             -> {
                 Log.d(TAG, "Showing permission rationale dialog")
-                // TODO: In an educational UI, explain to the user why your app requires this
+                // In an educational UI, explain to the user why your app requires this
                 // permission for a specific feature to behave as expected. In this UI,
                 // include a "cancel" or "no thanks" button that allows the user to
                 // continue using your app without granting the permission.
@@ -200,7 +230,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     likelyPlaces.addAll(
                         response.places.take(M_MAX_ENTRIES).mapNotNull { place ->
-                            place.toLikelyPlace()
+                            place.toUiModel()
                         }
                     )
 
@@ -230,31 +260,18 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         // Ask the user to choose the place where they are now.
         val listener =
             DialogInterface.OnClickListener { _, which -> // The "which" argument contains the position of the selected item.
-                val likelyPlace = likelyPlaces[which]
-                lastKnownLocation = likelyPlace.latLng
-
-                val snippet = buildString {
-                    append(likelyPlace.address)
-                    if (likelyPlace.attribution.isNotEmpty()) {
-                        append("\n")
-                        append(likelyPlace.attribution.joinToString(", "))
-                    }
-                }
-
-                val place = Place.builder().apply {
-                    displayName = likelyPlace.name
-                    location = likelyPlace.latLng
-                }.build()
+                val selectedPlace = likelyPlaces[which]
+                lastKnownLocation = selectedPlace.position
 
                 map?.clear()
 
-                setPlaceOnMap(place, snippet)
+                setPlaceOnMap(selectedPlace)
             }
 
         // Display the dialog.
         AlertDialog.Builder(this)
             .setTitle(R.string.pick_place)
-            .setItems(likelyPlaces.map { it.name }.toTypedArray(), listener)
+            .setItems(likelyPlaces.map { it.title }.toTypedArray(), listener)
             .setOnDismissListener {
                 currentButton.isEnabled = true
             }
@@ -273,21 +290,23 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun setPlaceOnMap(place: Place?, markerSnippet: String?) {
-        val latLng = place?.location ?: defaultLocation
+    private fun setPlaceOnMap(place: PlaceItemUiModel) {
         map?.moveCamera(
             CameraUpdateFactory.newLatLngZoom(
-                latLng,
+                place.position,
                 DEFAULT_ZOOM
             )
         )
         map?.addMarker(
             MarkerOptions()
-                .position(latLng)
-                .title(place?.displayName)
-                .snippet(markerSnippet)
+                .position(place.position)
+                .title(place.title)
+                .snippet(place.snippet)
         )
     }
+
+    private fun Place.toUiModel(): PlaceItemUiModel? =
+        toPlaceItemUiModel(this, getString(R.string.default_info_title))
 
     companion object {
         private const val TAG = "CurrentPlaceActivity"
@@ -298,25 +317,5 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         private const val KEY_LOCATION = "location"
 
         private const val M_MAX_ENTRIES = 5
-    }
-}
-
-private data class LikelyPlace(
-    val name: String,
-    val address: String,
-    val attribution: List<String>,
-    val latLng: LatLng
-)
-
-private fun Place.toLikelyPlace(): LikelyPlace? {
-    val name = this.displayName
-    val address = this.formattedAddress
-    val latLng = this.location
-    val attributions = this.attributions ?: emptyList()
-
-    return if (name != null && address != null && latLng != null) {
-        LikelyPlace(name, address, attributions, latLng)
-    } else {
-        null
     }
 }

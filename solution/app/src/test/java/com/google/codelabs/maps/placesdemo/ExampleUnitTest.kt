@@ -21,11 +21,12 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceResponse
 import com.google.android.libraries.places.api.net.SearchNearbyResponse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests verifying StringUtil formatting and Demo configuration.
+ * Unit tests verifying StringUtil formatting, PlaceItemUiModel mapping, and Demo configuration.
  */
 class ExampleUnitTest {
 
@@ -83,6 +84,60 @@ class ExampleUnitTest {
         val raw = prettyPrintAutocompleteWidget(place, raw = true)
         assertTrue(raw.startsWith("Autocomplete Widget Result:$RESULT_SEPARATOR"))
         assertTrue(raw.contains("Sydney Opera House"))
+    }
+
+    @Test
+    fun toPlaceItemUiModel_withAllFields_mapsExpectedUiModel() {
+        val latLng = LatLng(37.4220, -122.0841)
+        val place = Place.builder()
+            .setDisplayName("Googleplex")
+            .setFormattedAddress("1600 Amphitheatre Pkwy")
+            .setAttributions(listOf("Attribution 1", "Attribution 2"))
+            .setLocation(latLng)
+            .build()
+
+        val uiModel = toPlaceItemUiModel(place, "Default Title")
+
+        assertEquals(
+            PlaceItemUiModel(
+                title = "Googleplex",
+                snippet = "1600 Amphitheatre Pkwy\nAttribution 1\nAttribution 2",
+                position = latLng
+            ),
+            uiModel
+        )
+    }
+
+    @Test
+    fun toPlaceItemUiModel_withMissingLocation_returnsNull() {
+        val place = Place.builder()
+            .setDisplayName("No Location Place")
+            .setFormattedAddress("Nowhere")
+            .build()
+
+        val uiModel = toPlaceItemUiModel(place, "Default Title")
+
+        assertNull(uiModel)
+    }
+
+    @Test
+    fun toPlaceItemUiModel_withMissingDisplayName_usesDefaultTitle() {
+        val latLng = LatLng(37.4220, -122.0841)
+        val place = Place.builder()
+            .setFormattedAddress("1600 Amphitheatre Pkwy")
+            .setLocation(latLng)
+            .build()
+
+        val uiModel = toPlaceItemUiModel(place, "Default Title")
+
+        assertEquals(
+            PlaceItemUiModel(
+                title = "Default Title",
+                snippet = "1600 Amphitheatre Pkwy",
+                position = latLng
+            ),
+            uiModel
+        )
     }
 
     @Test

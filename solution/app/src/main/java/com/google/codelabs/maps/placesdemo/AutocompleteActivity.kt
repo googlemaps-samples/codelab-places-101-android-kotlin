@@ -23,10 +23,17 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.libraries.places.widget.BasicPlaceAutocomplete
+import androidx.lifecycle.lifecycleScope
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.android.libraries.places.api.net.kotlin.awaitFetchPlace
+import com.google.android.libraries.places.widget.PlaceAutocomplete
 import com.google.android.libraries.places.widget.PlaceAutocompleteActivity
+import kotlinx.coroutines.launch
 
 class AutocompleteActivity : AppCompatActivity() {
+    private lateinit var placesClient: PlacesClient
     private lateinit var responseView: TextView
     private lateinit var autocompleteButton: Button
 
@@ -35,13 +42,36 @@ class AutocompleteActivity : AppCompatActivity() {
             val intent = result.data
             when (result.resultCode) {
                 Activity.RESULT_OK -> {
-                    val place = intent?.let { BasicPlaceAutocomplete.getPlaceFromIntent(it) }
-                    if (place != null) {
-                        responseView.text = prettyPrintAutocompleteWidget(place, false)
+                    if (intent != null) {
+                        val prediction = PlaceAutocomplete.getPredictionFromIntent(intent)
+                        val sessionToken = PlaceAutocomplete.getSessionTokenFromIntent(intent)
+                        if (prediction != null) {
+                            val placeFields = listOf(
+                                Place.Field.DISPLAY_NAME,
+                                Place.Field.ID,
+                                Place.Field.LOCATION,
+                                Place.Field.FORMATTED_ADDRESS
+                            )
+                            lifecycleScope.launch {
+                                try {
+                                    val response = placesClient.awaitFetchPlace(
+                                        prediction.placeId,
+                                        placeFields
+                                    ) {
+                                        this.sessionToken = sessionToken
+                                    }
+                                    responseView.text =
+                                        prettyPrintAutocompleteWidget(response.place, false)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    responseView.text = e.message
+                                }
+                            }
+                        }
                     }
                 }
                 PlaceAutocompleteActivity.RESULT_ERROR -> {
-                    val status = intent?.let { BasicPlaceAutocomplete.getResultStatusFromIntent(it) }
+                    val status = intent?.let { PlaceAutocomplete.getResultStatusFromIntent(it) }
                     Toast.makeText(
                         this,
                         "Failed to get place '${status?.statusMessage}'",
@@ -55,13 +85,16 @@ class AutocompleteActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_autocomplete)
 
+        // Retrieve a PlacesClient (previously initialized - see DemoApplication)
+        placesClient = Places.createClient(this)
+
         // Set up view objects
         responseView = findViewById(R.id.autocomplete_response_content)
         autocompleteButton = findViewById(R.id.autocomplete_button)
 
         // Launch Place Autocomplete when the button is clicked
         autocompleteButton.setOnClickListener {
-            val intent = BasicPlaceAutocomplete.createIntent(this)
+            val intent = PlaceAutocomplete.createIntent(this)
             startAutocomplete.launch(intent)
         }
     }
