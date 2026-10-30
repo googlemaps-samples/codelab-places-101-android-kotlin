@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
+            it.fitsSystemWindows = true
             it.adapter = DemoAdapter(this, Demo.values())
             it.onItemClickListener = AdapterView.OnItemClickListener { parent, _, position, _ ->
                 val demo = parent.adapter.getItem(position) as? Demo

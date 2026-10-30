@@ -16,52 +16,90 @@
 
 package com.google.codelabs.maps.placesdemo
 
+import android.app.Activity
 import android.os.Bundle
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.ktx.widget.PlaceSelectionError
-import com.google.android.libraries.places.ktx.widget.PlaceSelectionSuccess
-import com.google.android.libraries.places.ktx.widget.placeSelectionEvents
-import com.google.android.libraries.places.widget.AutocompleteSupportFragment
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.android.libraries.places.api.net.kotlin.awaitFetchPlace
+import com.google.android.libraries.places.widget.PlaceAutocomplete
+import com.google.android.libraries.places.widget.PlaceAutocompleteActivity
+import kotlinx.coroutines.launch
 
-@ExperimentalCoroutinesApi
+// [START places_101_kotlin_autocomplete_activity]
 class AutocompleteActivity : AppCompatActivity() {
+    private lateinit var placesClient: PlacesClient
     private lateinit var responseView: TextView
+    private lateinit var autocompleteButton: Button
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_autocomplete)
-
-        // Set up view objects
-        responseView = findViewById(R.id.autocomplete_response_content)
-        val autocompleteFragment =
-            supportFragmentManager.findFragmentById(R.id.autocomplete_fragment)
-                    as AutocompleteSupportFragment
-
-        // Specify the types of place data to return.
-        val placeFields: List<Place.Field> =
-            listOf(Place.Field.NAME, Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
-        autocompleteFragment.setPlaceFields(placeFields)
-
-        // Listen to place selection events
-        lifecycleScope.launchWhenCreated {
-            autocompleteFragment.placeSelectionEvents().collect { event ->
-                when (event) {
-                    is PlaceSelectionSuccess -> {
-                        val place = event.place
-                        responseView.text = prettyPrintAutocompleteWidget(place, false)
+    // [START places_101_kotlin_autocomplete_launcher]
+    private val startAutocomplete =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val intent = result.data
+            when (result.resultCode) {
+                Activity.RESULT_OK -> {
+                    if (intent != null) {
+                        val prediction = PlaceAutocomplete.getPredictionFromIntent(intent)
+                        val sessionToken = PlaceAutocomplete.getSessionTokenFromIntent(intent)
+                        if (prediction != null) {
+                            val placeFields = listOf(
+                                Place.Field.DISPLAY_NAME,
+                                Place.Field.ID,
+                                Place.Field.LOCATION,
+                                Place.Field.FORMATTED_ADDRESS
+                            )
+                            lifecycleScope.launch {
+                                try {
+                                    val response = placesClient.awaitFetchPlace(
+                                        prediction.placeId,
+                                        placeFields
+                                    ) {
+                                        this.sessionToken = sessionToken
+                                    }
+                                    responseView.text =
+                                        prettyPrintAutocompleteWidget(response.place, false)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    responseView.text = e.message
+                                }
+                            }
+                        }
                     }
-                    is PlaceSelectionError -> Toast.makeText(
-                        this@AutocompleteActivity,
-                        "Failed to get place '${event.status.statusMessage}'",
+                }
+                PlaceAutocompleteActivity.RESULT_ERROR -> {
+                    val status = intent?.let { PlaceAutocomplete.getResultStatusFromIntent(it) }
+                    Toast.makeText(
+                        this,
+                        "Failed to get place '${status?.statusMessage}'",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             }
         }
+    // [END places_101_kotlin_autocomplete_launcher]
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_autocomplete)
+
+        // Retrieve a PlacesClient (previously initialized - see DemoApplication)
+        placesClient = Places.createClient(this)
+
+        // Set up view objects
+        responseView = findViewById(R.id.autocomplete_response_content)
+        autocompleteButton = findViewById(R.id.autocomplete_button)
+
+        // Launch Place Autocomplete when the button is clicked
+        autocompleteButton.setOnClickListener {
+            val intent = PlaceAutocomplete.createIntent(this)
+            startAutocomplete.launch(intent)
+        }
     }
 }
+// [END places_101_kotlin_autocomplete_activity]

@@ -20,6 +20,7 @@
     <uses-permission
         android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- [START places_101_kotlin_manifest_application] -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -28,6 +29,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PlacesDemo">
+    <!-- [END places_101_kotlin_manifest_application] -->
+        <!-- [START places_101_kotlin_manifest_maps_meta_data] -->
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
@@ -37,6 +40,7 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
+        <!-- [END places_101_kotlin_manifest_maps_meta_data] -->
 
         <activity
             android:name=".MainActivity"
@@ -46,8 +50,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".AutocompleteActivity" android:label="@string/autocomplete_fragment_demo_title" />
-        <activity android:name=".CurrentPlaceActivity" android:label="@string/current_demo_title" />
+        <!-- [START places_101_kotlin_manifest_details_activity] -->
         <activity android:name=".DetailsActivity" android:label="@string/details_demo_title" />
+        <!-- [END places_101_kotlin_manifest_details_activity] -->
+        <!-- [START places_101_kotlin_manifest_autocomplete_activity] -->
+        <activity android:name=".AutocompleteActivity" android:label="@string/autocomplete_fragment_demo_title" />
+        <!-- [END places_101_kotlin_manifest_autocomplete_activity] -->
+        <!-- [START places_101_kotlin_manifest_current_activity] -->
+        <activity android:name=".CurrentPlaceActivity" android:label="@string/current_demo_title" />
+        <!-- [END places_101_kotlin_manifest_current_activity] -->
     </application>
 </manifest>
