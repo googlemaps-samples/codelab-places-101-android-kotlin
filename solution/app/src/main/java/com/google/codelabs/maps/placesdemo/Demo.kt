@@ -24,19 +24,25 @@ enum class Demo(
     @StringRes val description: Int,
     val activity: Class<out Activity>
 ) {
+    // [START places_101_kotlin_demo_details]
     DETAILS_FRAGMENT_DEMO(
         R.string.details_demo_title,
         R.string.details_demo_description,
         DetailsActivity::class.java
     ),
+    // [END places_101_kotlin_demo_details]
+    // [START places_101_kotlin_demo_autocomplete]
     AUTOCOMPLETE_FRAGMENT_DEMO(
         R.string.autocomplete_fragment_demo_title,
         R.string.autocomplete_fragment_demo_description,
         AutocompleteActivity::class.java
     ),
+    // [END places_101_kotlin_demo_autocomplete]
+    // [START places_101_kotlin_demo_current]
     CURRENT_FRAGMENT_DEMO(
         R.string.current_demo_title,
         R.string.current_demo_description,
         CurrentPlaceActivity::class.java
     ),
+    // [END places_101_kotlin_demo_current]
 }

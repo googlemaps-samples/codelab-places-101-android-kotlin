@@ -48,6 +48,8 @@ import com.google.android.libraries.places.api.net.kotlin.awaitSearchNearby
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+// [START places_101_kotlin_current_place_full]
+// [START places_101_kotlin_place_item_ui_model]
 /**
  * UI model representing a candidate place item in the selection dialog and on the map.
  *
@@ -77,7 +79,9 @@ internal fun toPlaceItemUiModel(place: Place, defaultTitle: String): PlaceItemUi
     }
     return PlaceItemUiModel(title = title, snippet = snippet, position = position)
 }
+// [END places_101_kotlin_place_item_ui_model]
 
+// [START places_101_kotlin_current_place_on_create]
 class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var placesClient: PlacesClient
     private lateinit var currentButton: Button
@@ -85,14 +89,17 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
     private var map: GoogleMap? = null
     private val defaultLocation = LatLng(-33.8523341, 151.2106085)
 
+    // [START_EXCLUDE]
     private val likelyPlaces = mutableListOf<PlaceItemUiModel>()
 
     private var lastKnownLocation: LatLng? = null
+    // [END_EXCLUDE]
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_current)
 
+        // [START_EXCLUDE]
         if (savedInstanceState != null) {
             lastKnownLocation = BundleCompat.getParcelable(
                 savedInstanceState,
@@ -100,6 +107,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
                 LatLng::class.java
             )
         }
+        // [END_EXCLUDE]
 
         val apiKey = BuildConfig.PLACES_API_KEY
 
@@ -112,8 +120,10 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Retrieve a PlacesClient (previously initialized - see DemoApplication)
         placesClient = Places.createClient(this)
+        // [START_EXCLUDE]
         (supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment?)?.getMapAsync(this)
+        // [END_EXCLUDE]
 
         // Set view objects
         currentButton = findViewById(R.id.current_button)
@@ -125,6 +135,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    // [START_EXCLUDE]
     /**
      * Saves the state of the map when the activity is paused.
      */
@@ -133,6 +144,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onSaveInstanceState(outState)
     }
 
+    // [START places_101_kotlin_check_permission]
     /**
      * Checks that the user has granted permission for fine or coarse location.
      * If granted, searches for nearby places around the current location.
@@ -175,6 +187,8 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    // [START_EXCLUDE]
+    // [START places_101_kotlin_on_request_permissions_result]
     @SuppressLint("MissingPermission")
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -196,7 +210,9 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
         // At least one location permission has been granted, so proceed with searching nearby places
         searchNearbyPlaces()
     }
+    // [END places_101_kotlin_on_request_permissions_result]
 
+    // [START places_101_kotlin_search_nearby_places]
     /**
      * Fetches a list of nearby [Place] instances around the device's current location.
      */
@@ -226,6 +242,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
                     val circle = CircularBounds.newInstance(searchCenter, 500.0)
                     val response = placesClient.awaitSearchNearby(circle, placeFields)
 
+                    // [START_EXCLUDE]
                     likelyPlaces.clear()
 
                     likelyPlaces.addAll(
@@ -235,6 +252,7 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
                     )
 
                     openPlacesDialog()
+                    // [END_EXCLUDE]
 
                     responseView.text = response.prettyPrint()
 
@@ -252,7 +270,9 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
             checkPermissionThenFindCurrentPlace()
         }
     }
+    // [END places_101_kotlin_search_nearby_places]
 
+    // [START places_101_kotlin_open_places_dialog]
     /**
      * Displays a form allowing the user to select a place from a list of likely places.
      */
@@ -277,7 +297,9 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             .show()
     }
+    // [END places_101_kotlin_open_places_dialog]
 
+    // [START places_101_kotlin_on_map_ready]
     override fun onMapReady(map: GoogleMap) {
         this.map = map
         lastKnownLocation?.let { location ->
@@ -307,15 +329,23 @@ class CurrentPlaceActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun Place.toUiModel(): PlaceItemUiModel? =
         toPlaceItemUiModel(this, getString(R.string.default_info_title))
+    // [END places_101_kotlin_on_map_ready]
+    // [END_EXCLUDE]
 
     companion object {
         private const val TAG = "CurrentPlaceActivity"
         private const val PERMISSION_REQUEST_CODE = 9
+        // [START_EXCLUDE]
         private const val DEFAULT_ZOOM = 15f
 
         // Key for storing activity state.
         private const val KEY_LOCATION = "location"
 
         private const val M_MAX_ENTRIES = 5
+        // [END_EXCLUDE]
     }
+    // [END places_101_kotlin_check_permission]
+    // [END_EXCLUDE]
 }
+// [END places_101_kotlin_current_place_on_create]
+// [END places_101_kotlin_current_place_full]

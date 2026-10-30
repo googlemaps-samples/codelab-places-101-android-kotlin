@@ -32,11 +32,13 @@ import com.google.android.libraries.places.widget.PlaceAutocomplete
 import com.google.android.libraries.places.widget.PlaceAutocompleteActivity
 import kotlinx.coroutines.launch
 
+// [START places_101_kotlin_autocomplete_activity]
 class AutocompleteActivity : AppCompatActivity() {
     private lateinit var placesClient: PlacesClient
     private lateinit var responseView: TextView
     private lateinit var autocompleteButton: Button
 
+    // [START places_101_kotlin_autocomplete_launcher]
     private val startAutocomplete =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val intent = result.data
@@ -80,6 +82,7 @@ class AutocompleteActivity : AppCompatActivity() {
                 }
             }
         }
+    // [END places_101_kotlin_autocomplete_launcher]
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,3 +102,4 @@ class AutocompleteActivity : AppCompatActivity() {
         }
     }
 }
+// [END places_101_kotlin_autocomplete_activity]

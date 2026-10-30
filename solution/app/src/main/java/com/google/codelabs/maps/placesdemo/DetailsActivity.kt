@@ -29,6 +29,7 @@ import com.google.android.libraries.places.api.net.kotlin.awaitFetchPlace
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 
+// [START places_101_kotlin_details_activity_skeleton]
 class DetailsActivity : AppCompatActivity() {
     private lateinit var placesClient: PlacesClient
     private lateinit var detailsButton: Button
@@ -53,9 +54,13 @@ class DetailsActivity : AppCompatActivity() {
             return
         }
 
+        // [START_EXCLUDE]
+        // [START places_101_kotlin_details_create_client]
         // Retrieve a PlacesClient (previously initialized - see DemoApplication)
         placesClient = Places.createClient(this)
+        // [END places_101_kotlin_details_create_client]
 
+        // [START places_101_kotlin_details_click_listener]
         // Upon button click, fetch and display the Place Details
         detailsButton.setOnClickListener { button ->
             button.isEnabled = false
@@ -77,9 +82,12 @@ class DetailsActivity : AppCompatActivity() {
                 button.isEnabled = true
             }
         }
+        // [END places_101_kotlin_details_click_listener]
+        // [END_EXCLUDE]
     }
 
     companion object {
         private const val TAG = "DetailsActivity"
     }
 }
+// [END places_101_kotlin_details_activity_skeleton]

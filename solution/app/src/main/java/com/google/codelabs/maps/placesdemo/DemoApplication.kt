@@ -19,11 +19,15 @@ package com.google.codelabs.maps.placesdemo
 import android.app.Application
 import com.google.android.libraries.places.api.Places
 
+// [START places_101_kotlin_demo_application]
 class DemoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // [START places_101_kotlin_initialize_places]
         // Initialize the SDK with the Google Maps Platform API key
         Places.initializeWithNewPlacesApiEnabled(this, BuildConfig.PLACES_API_KEY)
+        // [END places_101_kotlin_initialize_places]
     }
 }
+// [END places_101_kotlin_demo_application]

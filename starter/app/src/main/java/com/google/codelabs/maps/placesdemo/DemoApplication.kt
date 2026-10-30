@@ -18,9 +18,11 @@ package com.google.codelabs.maps.placesdemo
 
 import android.app.Application
 
+// [START places_101_kotlin_demo_application]
 class DemoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
     }
 }
+// [END places_101_kotlin_demo_application]

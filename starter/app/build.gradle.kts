@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+// [START places_101_kotlin_secrets_plugin]
 plugins {
     alias(libs.plugins.android.application)
 }
+// [END places_101_kotlin_secrets_plugin]
 
 android {
     namespace = "com.google.codelabs.maps.placesdemo"
@@ -75,8 +77,10 @@ dependencies {
     // Provides the Espresso UI testing framework for instrumented Android tests
     androidTestImplementation(libs.androidx.espresso.core)
 
+    // [START places_101_kotlin_dependencies]
     // Pre-existing utility file StringUtil.kt is dependent on the Places SDK library
     compileOnly(libs.places)
     // Pre-existing utility file StringUtil.kt is dependent on the Maps SDK library (LatLng)
     compileOnly(libs.play.services.maps)
+    // [END places_101_kotlin_dependencies]
 }

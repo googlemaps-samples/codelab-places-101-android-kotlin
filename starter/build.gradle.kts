@@ -15,11 +15,12 @@
  */
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+// [START places_101_kotlin_secrets_classpath]
 buildscript {
     dependencies {
-        // Add dependencies here
     }
 }
+// [END places_101_kotlin_secrets_classpath]
 
 plugins {
     alias(libs.plugins.android.application) apply false

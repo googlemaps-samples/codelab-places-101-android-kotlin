@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+// [START places_101_kotlin_secrets_plugin]
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
+// [END places_101_kotlin_secrets_plugin]
 
 android {
     namespace = "com.google.codelabs.maps.placesdemo"
@@ -76,21 +78,30 @@ dependencies {
     // Provides the Espresso UI testing framework for instrumented Android tests
     androidTestImplementation(libs.androidx.espresso.core)
 
+    // [START places_101_kotlin_maps_dependencies]
+    // [START places_101_kotlin_dependencies]
     // Provides the Places SDK for Android, including Place Details, Autocomplete, Nearby Search, and built-in KTX coroutine extensions
     implementation(libs.places)
+    // [START_EXCLUDE]
     // Provides the Maps SDK for Android (SupportMapFragment, GoogleMap, LatLng, and MarkerOptions) to display places on a map
     implementation(libs.play.services.maps)
+    // [END_EXCLUDE]
     // Provides FusedLocationProviderClient to retrieve the device's current location for nearby place searches
     implementation(libs.play.services.location)
     // Provides the Task.await() coroutine extension to suspend on Google Play services location Tasks
     implementation(libs.kotlinx.coroutines.play.services)
+    // [END places_101_kotlin_dependencies]
+    // [END places_101_kotlin_maps_dependencies]
 }
 
+// [START places_101_kotlin_secrets_config]
 secrets {
-    // To add your Google Maps Platform API key to this project:
-    // 1. Create a file ./secrets.properties
-    // 2. Add this line, where YOUR_API_KEY is your API key:
-    //        PLACES_API_KEY=YOUR_API_KEY
+    // Optionally specify a different filename containing your secrets.
+    // The plugin defaults to "local.properties"
     propertiesFileName = "secrets.properties"
+
+    // A properties file containing default secret values. This file can be
+    // checked in version control.
     defaultPropertiesFileName = "local.defaults.properties"
 }
+// [END places_101_kotlin_secrets_config]

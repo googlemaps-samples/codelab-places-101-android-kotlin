@@ -16,10 +16,19 @@
 
 package com.google.codelabs.maps.placesdemo
 
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.model.AutocompleteSessionToken
+import com.google.android.libraries.places.api.model.CircularBounds
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceResponse
+import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.api.net.SearchNearbyResponse
+import com.google.android.libraries.places.api.net.kotlin.awaitFetchPlace
+import com.google.android.libraries.places.api.net.kotlin.awaitSearchNearby
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -156,5 +165,51 @@ class ExampleUnitTest {
         assertEquals(CurrentPlaceActivity::class.java, Demo.CURRENT_FRAGMENT_DEMO.activity)
         assertEquals(R.string.current_demo_title, Demo.CURRENT_FRAGMENT_DEMO.title)
         assertEquals(R.string.current_demo_description, Demo.CURRENT_FRAGMENT_DEMO.description)
+    }
+
+    /**
+     * Verifies that the coroutine code snippets quoted in the tutorial compile against
+     * the Places SDK for Android 6.0.2 KTX extensions.
+     */
+    @Suppress("UNUSED_VARIABLE", "unused")
+    private fun verifyCoroutineSnippetsCompile(
+        lifecycleScope: CoroutineScope,
+        placesClient: PlacesClient,
+        fusedLocationClient: FusedLocationProviderClient,
+        placeId: String,
+        sessionToken: AutocompleteSessionToken?
+    ) {
+        // [START places_101_kotlin_coroutine_fetch_place]
+        val placeFields = listOf(
+            Place.Field.DISPLAY_NAME,
+            Place.Field.ID,
+            Place.Field.LOCATION,
+            Place.Field.FORMATTED_ADDRESS
+        )
+
+        lifecycleScope.launch {
+            try {
+                val response = placesClient.awaitFetchPlace(placeId, placeFields) {
+                    this.sessionToken = sessionToken
+                }
+                val place = response.place
+            } catch (e: Exception) {
+                // Handle API errors
+            }
+        }
+        // [END places_101_kotlin_coroutine_fetch_place]
+
+        // [START places_101_kotlin_coroutine_search_nearby]
+        lifecycleScope.launch {
+            val location = fusedLocationClient.lastLocation.await()
+            val center = LatLng(location.latitude, location.longitude)
+            val circle = CircularBounds.newInstance(center, /* radius = */ 500.0)
+
+            val response = placesClient.awaitSearchNearby(circle, placeFields) {
+                this.maxResultCount = 10
+            }
+            val places = response.places
+        }
+        // [END places_101_kotlin_coroutine_search_nearby]
     }
 }

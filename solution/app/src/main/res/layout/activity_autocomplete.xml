@@ -22,6 +22,7 @@
     android:fitsSystemWindows="true"
     android:layout_margin="16dp">
 
+    <!-- [START places_101_kotlin_activity_autocomplete_views] -->
     <Button
         android:id="@+id/autocomplete_button"
         android:layout_width="match_parent"
@@ -34,4 +35,5 @@
         android:layout_height="wrap_content"
         android:paddingTop="16dp"
         android:textIsSelectable="true" />
+    <!-- [END places_101_kotlin_activity_autocomplete_views] -->
 </LinearLayout>
