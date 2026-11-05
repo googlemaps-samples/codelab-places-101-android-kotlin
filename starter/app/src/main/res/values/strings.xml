@@ -23,6 +23,7 @@
     <string name="current_demo_title">Current Place</string>
     <string name="current_demo_description">Suggest possible places that match the device\'s current location</string>
     <string name="button_details">Get Details</string>
+    <string name="button_autocomplete">Launch Autocomplete</string>
     <string name="details_input_hint">Enter a Place ID</string>
     <string name="details_input_default">ChIJ-fIL2vnvTxkRaNUY32NGBYs</string>
     <string name="current_button">Get Current Place</string>
