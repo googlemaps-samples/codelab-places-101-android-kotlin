@@ -18,6 +18,7 @@ package com.google.codelabs.maps.placesdemo
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -88,6 +89,15 @@ class AutocompleteActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_autocomplete)
 
+        val apiKey = BuildConfig.PLACES_API_KEY
+
+        // Log an error if apiKey is not set.
+        if (apiKey.isEmpty() || apiKey == "DEFAULT_API_KEY") {
+            Log.e(TAG, "No api key")
+            finish()
+            return
+        }
+
         // Retrieve a PlacesClient (previously initialized - see DemoApplication)
         placesClient = Places.createClient(this)
 
@@ -100,6 +110,10 @@ class AutocompleteActivity : AppCompatActivity() {
             val intent = PlaceAutocomplete.createIntent(this)
             startAutocomplete.launch(intent)
         }
+    }
+
+    companion object {
+        private const val TAG = "AutocompleteActivity"
     }
 }
 // [END places_101_kotlin_autocomplete_activity]
