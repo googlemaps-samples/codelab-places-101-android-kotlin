@@ -26,24 +26,46 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.api.net.SearchNearbyResponse
 import com.google.android.libraries.places.api.net.kotlin.awaitFetchPlace
 import com.google.android.libraries.places.api.net.kotlin.awaitSearchNearby
+import com.google.maps.android.robolectric.annotation.EnableMapsShadows
+import com.google.maps.android.robolectric.ktx.cameraTarget
+import com.google.maps.android.robolectric.ktx.cameraZoom
+import com.google.maps.android.robolectric.ktx.createTestMap
+import com.google.maps.android.robolectric.ktx.findMarker
+import com.google.maps.android.robolectric.ktx.markers
+import com.google.maps.android.robolectric.ktx.visibleBounds
+import com.google.maps.android.robolectric.powerassert.assertMap
+import com.google.maps.android.robolectric.powerassert.assertMarker
+import com.google.maps.android.robolectric.powerassert.contains
+import com.google.maps.android.robolectric.powerassert.distanceTo
+import com.google.maps.android.robolectric.powerassert.meters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
- * Unit tests verifying StringUtil formatting, PlaceItemUiModel mapping, and Demo configuration.
+ * Headless JVM unit and Robolectric tests verifying StringUtil formatting,
+ * PlaceItemUiModel mapping, Demo navigation, and CurrentPlaceActivity map behavior
+ * using `android-maps-testing` (`:robolectric-testing`) and Kotlin Power-Assert.
  */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34])
+@EnableMapsShadows
 class ExampleUnitTest {
+
+    private val sydneyOperaHouse = LatLng(-33.8567844, 151.2152967)
+    private val googleplex = LatLng(37.4220, -122.0841)
 
     private fun buildSamplePlace(): Place =
         Place.builder()
             .setDisplayName("Sydney Opera House")
             .setId("ChIJ3S-JXmauEmsRUcIaWtf4MzE")
-            .setLocation(LatLng(-33.8567844, 151.2152967))
+            .setLocation(sydneyOperaHouse)
             .setFormattedAddress("Bennelong Point, Sydney NSW 2000, Australia")
             .build()
 
@@ -57,13 +79,13 @@ class ExampleUnitTest {
             "Fetch Place Result:$RESULT_SEPARATOR" +
                 "Sydney Opera House (ChIJ3S-JXmauEmsRUcIaWtf4MzE) is located at " +
                 "-33.8567844, 151.2152967 (Bennelong Point, Sydney NSW 2000, Australia)"
-        assertEquals(expected, formatted)
+        check(formatted == expected)
     }
 
     @Test
     fun searchNearbyResponse_prettyPrint_emptyList() {
         val response = SearchNearbyResponse.newInstance(emptyList())
-        assertEquals("0 Current Place Results:", response.prettyPrint())
+        check(response.prettyPrint() == "0 Current Place Results:")
     }
 
     @Test
@@ -76,7 +98,7 @@ class ExampleUnitTest {
             "1 Current Place Results:$RESULT_SEPARATOR" +
                 "Sydney Opera House (ChIJ3S-JXmauEmsRUcIaWtf4MzE) is located at " +
                 "-33.8567844, 151.2152967 (Bennelong Point, Sydney NSW 2000, Australia)"
-        assertEquals(expected, formatted)
+        check(formatted == expected)
     }
 
     @Test
@@ -88,32 +110,32 @@ class ExampleUnitTest {
             "Autocomplete Widget Result:$RESULT_SEPARATOR" +
                 "Sydney Opera House (ChIJ3S-JXmauEmsRUcIaWtf4MzE) is located at " +
                 "-33.8567844, 151.2152967 (Bennelong Point, Sydney NSW 2000, Australia)"
-        assertEquals(expectedPretty, pretty)
+        check(pretty == expectedPretty)
 
         val raw = prettyPrintAutocompleteWidget(place, raw = true)
-        assertTrue(raw.startsWith("Autocomplete Widget Result:$RESULT_SEPARATOR"))
-        assertTrue(raw.contains("Sydney Opera House"))
+        check(
+            raw.startsWith("Autocomplete Widget Result:$RESULT_SEPARATOR") &&
+                raw.contains("Sydney Opera House")
+        )
     }
 
     @Test
     fun toPlaceItemUiModel_withAllFields_mapsExpectedUiModel() {
-        val latLng = LatLng(37.4220, -122.0841)
         val place = Place.builder()
             .setDisplayName("Googleplex")
             .setFormattedAddress("1600 Amphitheatre Pkwy")
             .setAttributions(listOf("Attribution 1", "Attribution 2"))
-            .setLocation(latLng)
+            .setLocation(googleplex)
             .build()
 
         val uiModel = toPlaceItemUiModel(place, "Default Title")
 
-        assertEquals(
-            PlaceItemUiModel(
+        check(
+            uiModel == PlaceItemUiModel(
                 title = "Googleplex",
                 snippet = "1600 Amphitheatre Pkwy\nAttribution 1\nAttribution 2",
-                position = latLng
-            ),
-            uiModel
+                position = googleplex
+            )
         )
     }
 
@@ -126,45 +148,90 @@ class ExampleUnitTest {
 
         val uiModel = toPlaceItemUiModel(place, "Default Title")
 
-        assertNull(uiModel)
+        check(uiModel == null)
     }
 
     @Test
     fun toPlaceItemUiModel_withMissingDisplayName_usesDefaultTitle() {
-        val latLng = LatLng(37.4220, -122.0841)
         val place = Place.builder()
             .setFormattedAddress("1600 Amphitheatre Pkwy")
-            .setLocation(latLng)
+            .setLocation(googleplex)
             .build()
 
         val uiModel = toPlaceItemUiModel(place, "Default Title")
 
-        assertEquals(
-            PlaceItemUiModel(
+        check(
+            uiModel == PlaceItemUiModel(
                 title = "Default Title",
                 snippet = "1600 Amphitheatre Pkwy",
-                position = latLng
-            ),
-            uiModel
+                position = googleplex
+            )
         )
     }
 
     @Test
     fun demoEnum_containsExpectedDemos() {
         val demos = Demo.values()
-        assertEquals(3, demos.size)
+        check(
+            demos.size == 3 &&
+                Demo.DETAILS_FRAGMENT_DEMO.activity == DetailsActivity::class.java &&
+                Demo.DETAILS_FRAGMENT_DEMO.title == R.string.details_demo_title &&
+                Demo.DETAILS_FRAGMENT_DEMO.description == R.string.details_demo_description &&
+                Demo.AUTOCOMPLETE_FRAGMENT_DEMO.activity == AutocompleteActivity::class.java &&
+                Demo.AUTOCOMPLETE_FRAGMENT_DEMO.title == R.string.autocomplete_fragment_demo_title &&
+                Demo.AUTOCOMPLETE_FRAGMENT_DEMO.description == R.string.autocomplete_fragment_demo_description &&
+                Demo.CURRENT_FRAGMENT_DEMO.activity == CurrentPlaceActivity::class.java &&
+                Demo.CURRENT_FRAGMENT_DEMO.title == R.string.current_demo_title &&
+                Demo.CURRENT_FRAGMENT_DEMO.description == R.string.current_demo_description
+        )
+    }
 
-        assertEquals(DetailsActivity::class.java, Demo.DETAILS_FRAGMENT_DEMO.activity)
-        assertEquals(R.string.details_demo_title, Demo.DETAILS_FRAGMENT_DEMO.title)
-        assertEquals(R.string.details_demo_description, Demo.DETAILS_FRAGMENT_DEMO.description)
+    @Test
+    fun currentPlaceActivity_onMapReadyAndSetPlaceOnMap_updatesCameraAndMarker() {
+        val activity = CurrentPlaceActivity()
+        val lastKnownLocationField = CurrentPlaceActivity::class.java.getDeclaredField(
+            "lastKnownLocation"
+        ).apply {
+            isAccessible = true
+        }
+        lastKnownLocationField.set(activity, sydneyOperaHouse)
 
-        assertEquals(AutocompleteActivity::class.java, Demo.AUTOCOMPLETE_FRAGMENT_DEMO.activity)
-        assertEquals(R.string.autocomplete_fragment_demo_title, Demo.AUTOCOMPLETE_FRAGMENT_DEMO.title)
-        assertEquals(R.string.autocomplete_fragment_demo_description, Demo.AUTOCOMPLETE_FRAGMENT_DEMO.description)
+        val map = createTestMap(width = 200, height = 200)
+        activity.onMapReady(map)
 
-        assertEquals(CurrentPlaceActivity::class.java, Demo.CURRENT_FRAGMENT_DEMO.activity)
-        assertEquals(R.string.current_demo_title, Demo.CURRENT_FRAGMENT_DEMO.title)
-        assertEquals(R.string.current_demo_description, Demo.CURRENT_FRAGMENT_DEMO.description)
+        map.assertMap(
+            (map.cameraTarget distanceTo sydneyOperaHouse) <= 5.meters &&
+                map.cameraZoom == 15f &&
+                sydneyOperaHouse in map.visibleBounds
+        )
+
+        val setPlaceMethod = CurrentPlaceActivity::class.java.getDeclaredMethod(
+            "setPlaceOnMap",
+            PlaceItemUiModel::class.java
+        ).apply {
+            isAccessible = true
+        }
+        val googleplexUiModel = PlaceItemUiModel(
+            title = "Googleplex",
+            snippet = "1600 Amphitheatre Pkwy",
+            position = googleplex
+        )
+        setPlaceMethod.invoke(activity, googleplexUiModel)
+
+        map.assertMap(
+            (map.cameraTarget distanceTo googleplex) <= 5.meters &&
+                map.cameraZoom == 15f &&
+                googleplex in map.visibleBounds &&
+                map.markers.size == 1
+        )
+
+        val marker = map.findMarker("Googleplex")!!
+        marker.assertMarker(
+            (marker.position distanceTo googleplex) <= 1.meters &&
+                marker.title == "Googleplex" &&
+                marker.snippet == "1600 Amphitheatre Pkwy" &&
+                marker.isVisible
+        )
     }
 
     /**
