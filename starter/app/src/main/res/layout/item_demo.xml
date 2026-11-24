@@ -25,6 +25,7 @@
         android:id="@+id/textViewTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="20sp" />
 
     <TextView
@@ -32,6 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="12sp" />
 
 </LinearLayout>

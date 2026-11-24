@@ -18,9 +18,8 @@ package com.google.codelabs.maps.placesdemo
 
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.api.model.PlaceLikelihood
 import com.google.android.libraries.places.api.net.FetchPlaceResponse
-import com.google.android.libraries.places.api.net.FindCurrentPlaceResponse
+import com.google.android.libraries.places.api.net.SearchNearbyResponse
 
 internal const val FIELD_SEPARATOR = "\n\t"
 internal const val RESULT_SEPARATOR = "\n---\n\t"
@@ -35,18 +34,18 @@ fun FetchPlaceResponse.prettyPrint(): String {
     }
 }
 
-fun FindCurrentPlaceResponse.prettyPrint(): String {
+fun SearchNearbyResponse.prettyPrint(): String {
     val response = this
 
     return buildString {
-        append(response.placeLikelihoods.size)
+        append(response.places.size)
         append(" Current Place Results:")
-        if (response.placeLikelihoods.isNotEmpty()) {
+        if (response.places.isNotEmpty()) {
             append(RESULT_SEPARATOR)
         }
         append(
-            response.placeLikelihoods.joinToString(RESULT_SEPARATOR) { placeLikelihood ->
-                placeLikelihood.prettyPrint()
+            response.places.joinToString(RESULT_SEPARATOR) { place ->
+                place.prettyPrint()
             }
         )
     }
@@ -64,9 +63,6 @@ internal fun prettyPrintAutocompleteWidget(place: Place, raw: Boolean): String {
     }
 }
 
-private fun PlaceLikelihood.prettyPrint() =
-    "Likelihood: $likelihood${FIELD_SEPARATOR}Place: ${place.prettyPrint()}"
-
 private fun LatLng.prettyPrint() = "$latitude, $longitude"
 
-private fun Place.prettyPrint() = "$name ($id) is located at ${latLng?.prettyPrint()} ($address)"
+private fun Place.prettyPrint() = "$displayName ($id) is located at ${location?.prettyPrint()} ($formattedAddress)"
