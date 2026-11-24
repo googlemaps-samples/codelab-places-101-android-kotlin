@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 // [START places_101_kotlin_secrets_plugin]
 plugins {
     alias(libs.plugins.android.application)
+    // [START_EXCLUDE]
+    alias(libs.plugins.kotlin.power.assert)
+    // [END_EXCLUDE]
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 // [END places_101_kotlin_secrets_plugin]
@@ -73,6 +78,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     // Provides the JUnit 4 framework for local unit tests
     testImplementation(libs.junit)
+    // Provides the Robolectric framework for running Android views and activities on the local JVM
+    testImplementation(libs.robolectric)
+    // Provides Google Maps SDK Robolectric shadows and Kotlin Power-Assert test extensions
+    testImplementation(libs.maps.testing.robolectric)
     // Provides AndroidX JUnit extensions for instrumented tests
     androidTestImplementation(libs.androidx.test.ext.junit)
     // Provides the Espresso UI testing framework for instrumented Android tests
@@ -105,3 +114,15 @@ secrets {
     defaultPropertiesFileName = "local.defaults.properties"
 }
 // [END places_101_kotlin_secrets_config]
+
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
+powerAssert {
+    functions = listOf(
+        "kotlin.assert",
+        "kotlin.check",
+        "kotlin.require",
+        "com.google.maps.android.robolectric.powerassert.assertGeo",
+        "com.google.maps.android.robolectric.powerassert.assertMap",
+        "com.google.maps.android.robolectric.powerassert.assertMarker"
+    )
+}

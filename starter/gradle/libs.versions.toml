@@ -18,6 +18,7 @@
 [versions]
 # Build-related plugins
 agp = "9.4.1"
+kotlin = "2.4.21"
 
 # AndroidX and UI
 coreKtx = "1.19.1"
@@ -35,6 +36,8 @@ coroutinesPlayServices = "1.11.0"
 
 # Testing
 junit = "4.13.2"
+robolectric = "4.17"
+mapsTesting = "1.0.0-rc01"
 androidxTestExtJunit = "1.3.0"
 espressoCore = "3.7.0"
 
@@ -55,9 +58,12 @@ kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-cor
 
 # Testing libraries
 junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+maps-testing-robolectric = { module = "com.google.maps.android:maps-testing-robolectric", version.ref = "mapsTesting" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version.ref = "kotlin" }
